@@ -6,18 +6,39 @@ import * as AWS from '../../../../aws';
 const router: Router = Router();
 
 // Get all feed items
-router.get('/', async (req: Request, res: Response) => {
-    const items = await FeedItem.findAndCountAll({order: [['id', 'DESC']]});
-    items.rows.map((item) => {
+router.get('/', 
+    async (req: Request, res: Response) => {
+        const items = await FeedItem.findAndCountAll({order: [['id', 'DESC']]});
+        items.rows.map((item) => {
             if(item.url) {
                 item.url = AWS.getGetSignedUrl(item.url);
             }
-    });
+        });
     res.send(items);
-});
+    }
+);
 
 //@TODO
 //Add an endpoint to GET a specific resource by Primary Key
+// Get specific feed item with an id
+router.get('/:id', 
+    async (req: Request, res: Response) => {
+        let { id } = req.params;
+
+        if(!id){
+            return res.status(400).send("id is required");
+        }
+
+        const items = await FeedItem.findAndCountAll({order: [['id', 'DESC']]}); 
+        const itemFeed = items.rows.filter((itemid) => itemid.id == id); 
+
+        if (itemFeed && itemFeed.length === 0) {
+            return res.status(404).send('item is not found')
+        }
+        
+    res.send(itemFeed);
+    }
+);
 
 // update a specific resource
 router.patch('/:id', 

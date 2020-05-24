@@ -18,34 +18,60 @@ router.get('/',
     }
 );
 
-//@TODO
-//Add an endpoint to GET a specific resource by Primary Key
 // Get specific feed item with an id
 router.get('/:id', 
+    requireAuth,
     async (req: Request, res: Response) => {
-        let { id } = req.params;
+        const { id } = req.params;
+        console.log(id);
 
         if(!id){
             return res.status(400).send("id is required");
         }
 
-        const items = await FeedItem.findAndCountAll({order: [['id', 'DESC']]}); 
-        const itemFeed = items.rows.filter((itemid) => itemid.id == id); 
+        const item = await FeedItem.findByPk(id);
 
-        if (itemFeed && itemFeed.length === 0) {
-            return res.status(404).send('item is not found')
+        if (item) {
+            res.status(200).send(item);
         }
         
-    res.send(itemFeed);
+        res.status(404).send('item is not found')
     }
 );
 
-// update a specific resource
-router.patch('/:id', 
-    requireAuth, 
+// update a resource
+router.patch('/:id',
+    requireAuth,
     async (req: Request, res: Response) => {
-        //@TODO try it yourself
-        res.send(500).send("not implemented")
+        const { id } = req.params;
+        const { newCaption } = req.params;
+        const { newUrl } = req.params;
+
+        console.log(id);
+
+        if(!id){return res.status(400).send("id is required");}
+        if (!newCaption) {return res.status(400).send({message: 'caption is required'});}
+        if (!newUrl) {return res.status(400).send({message: 'file url is required'});}
+
+        const item = await FeedItem.findByPk(id);
+
+        if (item) {
+            item.set('updatedAt', new Date());
+            item.url = newUrl;
+            item.caption = newCaption;
+            
+            item.update({url: newUrl, caption: newCaption}).then(() => {
+                console.log('Updated');
+            });
+
+            item.save().then(()=> {
+                res.status(200).send("SUCCESS");
+            }).error((error)=> {
+                res.send(400).send(error);
+            });
+        }
+
+        res.send(500).send("not implemented");
 });
 
 
